@@ -1,0 +1,66 @@
+services:
+
+  manageritm-server:
+    image: manageritm:${MANAGERITM_VERSION}
+    build:
+      context: manageritm
+      dockerfile: Dockerfile
+      args:
+          - MANAGERITM_VERSION=${MANAGERITM_VERSION}
+    user: ${USER_UID_GID}
+    ports:
+      - "5000-5299:5000-5299"       # mitmproxy listen ports and mitmweb ui ports
+      - "8000"                      # manageritm server port
+    volumes:
+      - "../:/home/manageritm"
+    working_dir: /home/manageritm
+
+    # can only use 1 worker because manageritm doesnt share information between workers
+    command: ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--log-level", "debug", "manageritm.app:main()"]
+
+  manageritm-client:
+    image: manageritm:${MANAGERITM_VERSION}
+    build:
+      context: manageritm
+      dockerfile: Dockerfile
+      args:
+          - MANAGERITM_VERSION=${MANAGERITM_VERSION}
+    user: ${USER_UID_GID}
+    volumes:
+      - "../:/home/manageritm"
+    working_dir: /home/manageritm
+    command: [ "sleep", "10000000000" ]
+
+  selenium-hub:
+    image: selenium/hub:${SELENIUM_VERSION}
+    ports:
+      - "4442:4442"
+      - "4443:4443"
+      - "4444:4444"
+
+  chrome:
+    image: selenium/node-chrome:${SELENIUM_VERSION}
+    ports:
+      - "5900"
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    volumes:
+      - "/dev/shm:/dev/shm"
+
+  firefox:
+    image: selenium/node-firefox:${SELENIUM_VERSION}
+    ports:
+      - "5900"
+    depends_on:
+      - selenium-hub
+    environment:
+      - SE_EVENT_BUS_HOST=selenium-hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+    volumes:
+      - "/dev/shm:/dev/shm"
+
