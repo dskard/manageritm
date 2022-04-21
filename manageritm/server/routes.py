@@ -80,11 +80,13 @@ def client():
 
     m = ProcessMinder()
 
-    output_har_filename = f"dump-{m.client_id}.har"
+    har_filename = f"dump-{m.client_id}.har"
+    har_file_path = os.path.join(har_dump_directory, har_filename)
+
     m.command = [
         "mitmweb",
         "-s", har_dump_script_path,
-        "--set", f"hardump={os.path.join(har_dump_directory, output_har_filename)}",
+        "--set", f"hardump={har_file_path}",
         "--listen-port", f"{port}",
         "--web-host", "0.0.0.0",
         "--web-port", f"{webport}",
@@ -94,7 +96,7 @@ def client():
     result["client_id"] = m.client_id
     result["port"] = port
     result["webport"] = webport
-    result["har"] = output_har_filename
+    result["har"] = har_file_path
 
     return result
 

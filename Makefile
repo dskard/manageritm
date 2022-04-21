@@ -25,4 +25,4 @@ test:
 clean:
 	find . \( -name '*.pyc' -or -name '*.pyo' \) -print -delete
 	find . -name '__pycache__' -print -delete
-	rm -r hars
+	rm -rf hars
