@@ -1,7 +1,20 @@
+import pytest
+
 from manageritm.server.process_minder import ProcessMinder
-from subprocess import Popen, PIPE, TimeoutExpired
+from subprocess import STDOUT, TimeoutExpired
 
 class TestProcessMinder:
+
+    @pytest.fixture(scope="function", autouse=True)
+    def setup(self, mocker):
+
+        def mocked_open_log_files(self):
+            pass
+
+        # mock the pm._open_log_files function
+        # so we don't create log files when running tests
+        mocker.patch('manageritm.server.process_minder.ProcessMinder._open_log_files', mocked_open_log_files)
+
 
     def test_start(self, mocker):
 
@@ -10,12 +23,12 @@ class TestProcessMinder:
                 self.command = command
                 self.args = args
                 self.pid = 400
-
-        class MockedPipe:
-            pass
+            def poll(self):
+                # set to 0 so __del__() succeeds
+                self.returncode = 0
+                return self.returncode
 
         mocker.patch('manageritm.server.process_minder.Popen', MockedPopen)
-        mocker.patch('manageritm.server.process_minder.PIPE', MockedPipe)
 
         command = "my_command"
         pm = ProcessMinder(command)
@@ -25,8 +38,9 @@ class TestProcessMinder:
 
         # check that Popen was called with the correct args to start a process
         assert pm.process.command == command
-        assert pm.process.args["stdout"] == MockedPipe
-        assert pm.process.args["stderr"] == MockedPipe
+        # this isnt true when we save stdout and stderr to log files
+        assert pm.process.args["stdout"] == pm.log
+        assert pm.process.args["stderr"] == STDOUT
 
 
     def test_stop_terminate(self, mocker):
@@ -37,6 +51,10 @@ class TestProcessMinder:
                 self.args = args
                 self.pid = 400
                 self.returncode = None
+            def poll(self):
+                # set to 0 so __del__() succeeds
+                self.returncode = 0
+                return self.returncode
             def terminate(self):
                 pass
             def wait(self,s=5):
@@ -75,6 +93,10 @@ class TestProcessMinder:
                 self.pid = 400
                 self.returncode = None
                 self._raise_exception = True
+            def poll(self):
+                # set to 0 so __del__() succeeds
+                self.returncode = 0
+                return self.returncode
             def terminate(self):
                 pass
             def wait(self,s=5):
@@ -132,6 +154,12 @@ class TestProcessMinder:
             def poll(self):
                 self.returncode = None
                 return self.returncode
+            def terminate(self):
+                pass
+            def wait(self,s=5):
+                self.returncode = 0
+            def kill(self):
+                self.returncode = 1
 
         mocker.patch('manageritm.server.process_minder.Popen', MockedPopen)
 

@@ -2,7 +2,12 @@ import pytest
 from manageritm.server import create_app
 
 @pytest.fixture(scope="function")
-def app():
+def app(mocker):
+
+    def mocked_open_log_files(self):
+        pass
+
+    mocker.patch('manageritm.server.process_minder.ProcessMinder._open_log_files', mocked_open_log_files)
 
     app = create_app('flask_config_testing.py')
 

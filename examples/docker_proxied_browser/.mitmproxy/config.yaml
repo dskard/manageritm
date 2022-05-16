@@ -1,9 +1,9 @@
 block_list:
 #    - :~d google.com:444
-    - :~d cdn\.mozilla\.net:444
-    - :~d services\.mozilla\.com:444
-    - :~d aus[0-9]+\.mozilla\.org:444
-    - :~d detectportal\.firefox\.com:444
+    - :~d cdn\.mozilla\.net:404
+    - :~d services\.mozilla\.com:404
+    - :~d aus[0-9]+\.mozilla\.org:404
+    - :~d detectportal\.firefox\.com:404
 
 view_filter: '! ( ~d cdn\.mozilla\.net | ~d services\.mozilla\.com | ~d aus[0-9]+\.mozilla\.org | ~d detectportal\.firefox\.com )'
 
