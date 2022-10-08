@@ -14,16 +14,24 @@ class TestClient:
     def client(self, requests_mock):
         self.client_id = str(uuid.uuid4())
         requests_mock.get(f"{self.base_uri}/client", status_code=200, json={'client_id': self.client_id})
+        # not sure why this mock doesn't prevent the
+        # client's __del__() function from failing
+        #requests_mock.get(f"{self.base_uri}/{self.client_id}/proxy/status", status_code=200, json={'status': None})
         client = ManagerITMClient(self.base_uri)
         client.client()
 
-        return client
+        yield client
+
+        client._client_id = None
+        del client
+        client = None
 
 
     def test_get_client(self, requests_mock):
         expected_status = 200
         expected_data = {'client_id': str(uuid.uuid4())}
         requests_mock.get(f"{self.base_uri}/client", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/proxy/status", status_code=200, json={'status': None})
 
         client = ManagerITMClient(self.base_uri)
         actual_data = client.client()

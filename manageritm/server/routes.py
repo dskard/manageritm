@@ -10,6 +10,7 @@ from .process_minder import ProcessMinder
 bp = Blueprint('routes', __name__)
 proxies = dict()
 
+
 def find_open_port(lower_bound=None, upper_bound=None, max_attempts=100):
     """search for an open port within a range
 
@@ -45,7 +46,6 @@ def find_open_port(lower_bound=None, upper_bound=None, max_attempts=100):
     return port
 
 
-
 @bp.route("/client", methods=["GET"])
 def client():
     current_app.logger.info(f"creating a new client")
@@ -71,7 +71,7 @@ def client():
         return result
 
     mitmproxy_scripts_dir = os.path.abspath(os.path.join(current_app.root_path, "scripts"))
-    har_dump_script_path = os.path.join(mitmproxy_scripts_dir,"har_dump.py")
+    har_dump_script_path = os.path.join(mitmproxy_scripts_dir, "har_dump.py")
     har_dump_directory = "./hars"
 
     # create hars directory if it doesnt exist
@@ -90,6 +90,7 @@ def client():
         "--listen-port", f"{port}",
         "--web-host", "0.0.0.0",
         "--web-port", f"{webport}",
+        "--no-web-open-browser"
     ]
 
     proxies[m.client_id] = m
@@ -111,7 +112,7 @@ def proxy_start(client_id):
     # negative -> error starting process
     # None -> process is still running
     result = dict(
-        status= -1
+        status=-1
     )
 
     # check if the client_id exists

@@ -1,4 +1,17 @@
+PROJECT=manageritm
 PYTESTOPTS?=
+PYTHON_VERSION?=3.9.11
+
+.PHONY: pyenv
+pyenv:
+	pyenv install ${PYTHON_VERSION} --skip-existing
+	pyenv uninstall ${PROJECT} || true
+	pyenv virtualenv ${PYTHON_VERSION} ${PROJECT}
+	pyenv local ${PROJECT}
+	pip install black pytest pdbpp poetry
+	sed -i '/export VIRTUAL_ENV=/d' .envrc || true
+	echo "export VIRTUAL_ENV=\$$$\(pyenv prefix)" >> .envrc
+	direnv allow || true
 
 .PHONY: all
 all:
@@ -13,6 +26,10 @@ run:
 	FLASK_APP="manageritm.app:create_app()" \
 	FLASK_ENV=development \
 	poetry run flask run
+
+.PHONY: server
+server:
+	poetry run gunicorn --bind localhost:8000 --workers 1 --log-level debug "manageritm.app:main()"
 
 .PHONY: test
 test:
