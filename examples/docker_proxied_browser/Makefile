@@ -8,7 +8,7 @@ SCALE_CHROME=1
 SCALE_CLIENT=1
 SCALE_SERVER=1
 SCALE_FIREFOX=1
-SELENIUM_VERSION=4.1.2-20220217
+SELENIUM_VERSION=4.3.0-20220726
 TRE_IMAGE?=manageritm:tre
 USER_UID_GID=`id -u`:`id -g`
 WORKDIR=/home/docker
@@ -40,6 +40,7 @@ build-services:
 .PHONY: build-tre
 build-tre:
 	cp ../../dist/manageritm-*-py3-none-any.whl docker/tre/.
+	cp ../../../mitmweb-client/dist/mitmweb_client-*-py3-none-any.whl docker/tre/.
 	docker build -t ${TRE_IMAGE} docker/tre
 
 .PHONY: run
