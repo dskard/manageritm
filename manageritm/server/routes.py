@@ -3,7 +3,7 @@ import os
 import random
 import socket
 
-from flask import Blueprint, current_app
+from flask import Blueprint, current_app, request
 from .process_minder import ProcessMinder
 
 
@@ -49,6 +49,11 @@ def find_open_port(lower_bound=None, upper_bound=None, max_attempts=100):
 @bp.route("/client", methods=["GET"])
 def client():
     current_app.logger.info(f"creating a new client")
+    current_app.logger.debug(f"query args: {request.args.to_dict()}")
+
+    args = request.args
+    user_provided_port = args.get("port", type=int)
+    user_provided_webport = args.get("webport", type=int)
 
     result = dict(
         client_id=None,
@@ -61,14 +66,22 @@ def client():
     # port may not be open when we start the server
     port_lower_bound = 5200
     port_upper_bound = 5299
-    port = find_open_port(port_lower_bound, port_upper_bound)
-    if port is None:
-        current_app.logger.info(f"could not find an open port in the range {port_lower_bound}-{port_upper_bound}")
-        return result
-    webport = find_open_port(port_lower_bound, port_upper_bound)
-    if webport is None:
-        current_app.logger.info(f"could not find an open webport in the range {port_lower_bound}-{port_upper_bound}")
-        return result
+
+    if user_provided_port is None:
+        port = find_open_port(port_lower_bound, port_upper_bound)
+        if port is None:
+            current_app.logger.info(f"could not find an open port in the range {port_lower_bound}-{port_upper_bound}")
+            return result
+    else:
+        port = user_provided_port
+
+    if user_provided_webport is None:
+        webport = find_open_port(port_lower_bound, port_upper_bound)
+        if webport is None:
+            current_app.logger.info(f"could not find an open webport in the range {port_lower_bound}-{port_upper_bound}")
+            return result
+    else:
+        webport = user_provided_webport
 
     mitmproxy_scripts_dir = os.path.abspath(os.path.join(current_app.root_path, "scripts"))
     har_dump_script_path = os.path.join(mitmproxy_scripts_dir, "har_dump.py")

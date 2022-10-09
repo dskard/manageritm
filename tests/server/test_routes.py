@@ -1,8 +1,9 @@
 from manageritm.server.routes import find_open_port
 
+
 class TestRoutes:
 
-    def test_get_client(self, app):
+    def test_get_client_find_open_ports(self, app):
 
         response = app.get('/client')
 
@@ -13,6 +14,41 @@ class TestRoutes:
         assert result["port"] is not None
         assert result["har"] is not None
 
+    def test_get_client_user_provided_port(self, app):
+
+        response = app.get('/client?port=5200')
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+        assert result["port"] == 5200
+        assert result["webport"] is not None
+        assert result["har"] is not None
+
+    def test_get_client_user_provided_webport(self, app):
+
+        response = app.get('/client?webport=5200')
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+        assert result["port"] is not None
+        assert result["webport"] == 5200
+        assert result["har"] is not None
+
+    def test_get_client_user_provided_all_ports(self, app):
+
+        response = app.get('/client?port=5200&webport=5201')
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+        assert result["port"] == 5200
+        assert result["webport"] == 5201
+        assert result["har"] is not None
 
     def test_start_process(self, app_with_client):
 
@@ -24,7 +60,6 @@ class TestRoutes:
         result = response.json
         assert result["status"] is None
 
-
     def test_process_status(self, app_with_process):
 
         (app, client_id) = app_with_process
@@ -34,7 +69,6 @@ class TestRoutes:
 
         result = response.json
         assert result["status"] is None
-
 
     def test_stop_process(self, app_with_process):
 
@@ -50,13 +84,12 @@ class TestRoutes:
         # not sure why it also shows up with 0 if you wait too long
         assert result["status"] in (0, -9, -15)
 
-
     def test_find_port_success_no_bounds(self, mocker):
 
         expected_port = 4321
 
         class MockedSocket:
-            def __init__(self,*args,**kwargs):
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
 
@@ -71,11 +104,9 @@ class TestRoutes:
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
 
-
         actual_port = find_open_port()
 
         assert actual_port == expected_port
-
 
     def test_find_port_lower_bound_only(self, mocker):
         """with only a lower bound, no range is considered"""
@@ -83,7 +114,7 @@ class TestRoutes:
         expected_port = 4321
 
         class MockedSocket:
-            def __init__(self,*args,**kwargs):
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
                 self.port = expected_port
@@ -93,7 +124,7 @@ class TestRoutes:
                 # we expect the port to be 0 because only lower bound was given
                 # if it is non-zero, overwrite our expected_port in self.port
                 # so that the provided port is returned by getsockname()
-                (host,port) = arg
+                (host, port) = arg
                 if port != 0:
                     self.port = port
 
@@ -105,11 +136,9 @@ class TestRoutes:
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
 
-
         actual_port = find_open_port(lower_bound=5000)
 
         assert actual_port == expected_port
-
 
     def test_find_port_upper_bound_only(self, mocker):
         """with only an upper bound, no range is considered"""
@@ -117,7 +146,7 @@ class TestRoutes:
         expected_port = 4321
 
         class MockedSocket:
-            def __init__(self,*args,**kwargs):
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
                 self.port = expected_port
@@ -127,7 +156,7 @@ class TestRoutes:
                 # we expect the port to be 0 because only lower bound was given
                 # if it is non-zero, overwrite our expected_port in self.port
                 # so that the provided port is returned by getsockname()
-                (host,port) = arg
+                (host, port) = arg
                 if port != 0:
                     self.port = port
 
@@ -139,11 +168,9 @@ class TestRoutes:
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
 
-
         actual_port = find_open_port(upper_bound=4000)
 
         assert actual_port == expected_port
-
 
     def test_find_port_lower_and_upper_bound(self, mocker):
         """with lower and upper bounds, a random port is chosen"""
@@ -151,7 +178,7 @@ class TestRoutes:
         unexpected_port = 4321
 
         class MockedSocket:
-            def __init__(self,*args,**kwargs):
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
                 self.port = unexpected_port
@@ -162,7 +189,7 @@ class TestRoutes:
                 # upper bounds were given.
                 # if it is non-zero, overwrite our unexpected_port in self.port
                 # so that the provided port is returned by getsockname()
-                (host,port) = arg
+                (host, port) = arg
                 if port != 0:
                     self.port = port
 
@@ -174,7 +201,6 @@ class TestRoutes:
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
 
-
         lower_bound = 5000
         upper_bound = 5099
         actual_port = find_open_port(lower_bound=lower_bound, upper_bound=upper_bound)
@@ -183,12 +209,12 @@ class TestRoutes:
         assert actual_port >= lower_bound
         assert actual_port <= upper_bound
 
-
     def test_find_port_max_attempts(self, mocker):
 
         class MockedSocket:
             bind_call_count = 0
-            def __init__(self,*args,**kwargs):
+
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
 
@@ -206,7 +232,6 @@ class TestRoutes:
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
 
-
         lower_bound = 5000
         upper_bound = 5099
         max_attempts = 2
@@ -221,7 +246,8 @@ class TestRoutes:
 
         class MockedSocket:
             bind_call_count = 0
-            def __init__(self,*args,**kwargs):
+
+            def __init__(self, *args, **kwargs):
                 self.args = args
                 self.kwargs = kwargs
                 self.port = unexpected_port
@@ -236,14 +262,13 @@ class TestRoutes:
                 # upper bounds were given.
                 # if it is non-zero, overwrite our unexpected_port in self.port
                 # so that the provided port is returned by getsockname().
-                (host,port) = arg
+                (host, port) = arg
                 MockedSocket.bind_call_count += 1
                 if MockedSocket.bind_call_count < 3:
                     raise Error()
                 else:
                     if port != 0:
                         self.port = port
-
 
             def close(self):
                 pass
@@ -252,7 +277,6 @@ class TestRoutes:
                 return None, self.port
 
         mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
-
 
         lower_bound = 5000
         upper_bound = 5099

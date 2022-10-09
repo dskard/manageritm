@@ -54,8 +54,14 @@ class ManagerITMClient:
 
         return r.json()
 
-    def client(self):
-        result = self._http(requests.get, "/client")
+    def client(self, port=None, webport=None):
+        params = {}
+        if port is not None:
+            params['port'] = port
+        if webport is not None:
+            params['webport'] = webport
+
+        result = self._http(requests.get, "/client", params=params)
         self._client_id = result["client_id"]
         return result
 
