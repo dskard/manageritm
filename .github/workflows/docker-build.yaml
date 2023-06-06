@@ -47,7 +47,7 @@ jobs:
         uses: docker/build-push-action@v4
         if: ${{ github.ref != 'refs/heads/main' }}
         with:
-          context: .
+          context: docker/manageritm
           push: true
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
