@@ -1,7 +1,7 @@
 import pytest
 import uuid
 
-from manageritm.client import ManagerITMClient
+from manageritm.client import ManagerITMProxyClient
 
 class TestClient:
 
@@ -13,11 +13,11 @@ class TestClient:
     @pytest.fixture(scope="function")
     def client(self, requests_mock):
         self.client_id = str(uuid.uuid4())
-        requests_mock.get(f"{self.base_uri}/client", status_code=200, json={'client_id': self.client_id})
+        requests_mock.post(f"{self.base_uri}/client/proxy", status_code=200, json={'client_id': self.client_id})
         # not sure why this mock doesn't prevent the
         # client's __del__() function from failing
-        #requests_mock.get(f"{self.base_uri}/{self.client_id}/proxy/status", status_code=200, json={'status': None})
-        client = ManagerITMClient(self.base_uri)
+        #requests_mock.get(f"{self.base_uri}/{self.client_id}/status", status_code=200, json={'status': None})
+        client = ManagerITMProxyClient(self.base_uri)
         client.client()
 
         yield client
@@ -30,10 +30,10 @@ class TestClient:
     def test_get_client_default_ports(self, requests_mock):
         expected_status = 200
         expected_data = {'client_id': str(uuid.uuid4())}
-        requests_mock.get(f"{self.base_uri}/client", status_code=expected_status, json=expected_data)
-        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/proxy/status", status_code=200, json={'status': None})
+        requests_mock.post(f"{self.base_uri}/client/proxy", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/status", status_code=200, json={'status': None})
 
-        client = ManagerITMClient(self.base_uri)
+        client = ManagerITMProxyClient(self.base_uri)
         actual_data = client.client()
 
         assert actual_data == expected_data
@@ -47,10 +47,10 @@ class TestClient:
             'port': 5200,
             'webport': 5201,
         }
-        requests_mock.get(f"{self.base_uri}/client?port=5200", status_code=expected_status, json=expected_data)
-        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/proxy/status", status_code=200, json={'status': None})
+        requests_mock.post(f"{self.base_uri}/client/proxy", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/status", status_code=200, json={'status': None})
 
-        client = ManagerITMClient(self.base_uri)
+        client = ManagerITMProxyClient(self.base_uri)
         actual_data = client.client(port=5200)
 
         assert actual_data == expected_data
@@ -64,10 +64,10 @@ class TestClient:
             'port': 5200,
             'webport': 5201,
         }
-        requests_mock.get(f"{self.base_uri}/client?webport=5201", status_code=expected_status, json=expected_data)
-        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/proxy/status", status_code=200, json={'status': None})
+        requests_mock.post(f"{self.base_uri}/client/proxy", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/status", status_code=200, json={'status': None})
 
-        client = ManagerITMClient(self.base_uri)
+        client = ManagerITMProxyClient(self.base_uri)
         actual_data = client.client(webport=5201)
 
         assert actual_data == expected_data
@@ -81,10 +81,10 @@ class TestClient:
             'port': 5200,
             'webport': 5201,
         }
-        requests_mock.get(f"{self.base_uri}/client?port=5200&webport=5201", status_code=expected_status, json=expected_data)
-        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/proxy/status", status_code=200, json={'status': None})
+        requests_mock.post(f"{self.base_uri}/client/proxy", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{expected_data['client_id']}/status", status_code=200, json={'status': None})
 
-        client = ManagerITMClient(self.base_uri)
+        client = ManagerITMProxyClient(self.base_uri)
         actual_data = client.client(port=5200, webport=5201)
 
         assert actual_data == expected_data
@@ -106,13 +106,13 @@ class TestClient:
             "running",
         ]
     )
-    def test_proxy_start(self, requests_mock, exit_status, client):
+    def test_start(self, requests_mock, exit_status, client):
 
         expected_status = 200
         expected_data = {"status": exit_status}
-        requests_mock.post(f"{self.base_uri}/{self.client_id}/proxy/start", status_code=expected_status, json=expected_data)
+        requests_mock.post(f"{self.base_uri}/{self.client_id}/start", status_code=expected_status, json=expected_data)
 
-        actual_data = client.proxy_start()
+        actual_data = client.start()
 
         assert actual_data == expected_data
 
@@ -132,13 +132,13 @@ class TestClient:
             "running",
         ]
     )
-    def test_proxy_status(self, requests_mock, exit_status, client):
+    def test_status(self, requests_mock, exit_status, client):
 
         expected_status = 200
         expected_data = {"status": exit_status}
-        requests_mock.get(f"{self.base_uri}/{self.client_id}/proxy/status", status_code=expected_status, json=expected_data)
+        requests_mock.get(f"{self.base_uri}/{self.client_id}/status", status_code=expected_status, json=expected_data)
 
-        actual_data = client.proxy_status()
+        actual_data = client.status()
 
         assert actual_data == expected_data
 
@@ -158,12 +158,12 @@ class TestClient:
             "running",
         ]
     )
-    def test_proxy_stop(self, requests_mock, exit_status, client):
+    def test_stop(self, requests_mock, exit_status, client):
 
         expected_status = 200
         expected_data = {"status": exit_status}
-        requests_mock.post(f"{self.base_uri}/{self.client_id}/proxy/stop", status_code=expected_status, json=expected_data)
+        requests_mock.post(f"{self.base_uri}/{self.client_id}/stop", status_code=expected_status, json=expected_data)
 
-        actual_data = client.proxy_stop()
+        actual_data = client.stop()
 
         assert actual_data == expected_data

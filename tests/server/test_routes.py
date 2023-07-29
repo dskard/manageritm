@@ -1,11 +1,24 @@
-from manageritm.server.routes import find_open_port
+import pytest
+
+from manageritm.server.utils import find_open_port
 
 
 class TestRoutes:
 
-    def test_get_client_find_open_ports(self, app):
+    def test_create_proxy_client_bad_port_type(self, app):
+        """sending the wrong datatype for the port should return an error"""
 
-        response = app.get('/client')
+        data = {"port": "fff"}
+        response = app.post('/client/proxy', json=data)
+
+        assert response.status_code == 400
+
+        result = response.data
+        assert result == bytes(f"'{data['port']}' is not of type 'integer'", encoding="utf-8")
+
+    def test_create_proxy_client_find_open_ports(self, app):
+
+        response = app.post('/client/proxy', json={})
 
         assert response.status_code == 200
 
@@ -14,9 +27,9 @@ class TestRoutes:
         assert result["port"] is not None
         assert result["har"] is not None
 
-    def test_get_client_user_provided_port(self, app):
+    def test_create_proxy_client_user_provided_port(self, app):
 
-        response = app.get('/client?port=5200')
+        response = app.post('/client/proxy', json={'port':5200})
 
         assert response.status_code == 200
 
@@ -26,9 +39,9 @@ class TestRoutes:
         assert result["webport"] is not None
         assert result["har"] is not None
 
-    def test_get_client_user_provided_webport(self, app):
+    def test_create_proxy_client_user_provided_webport(self, app):
 
-        response = app.get('/client?webport=5200')
+        response = app.post('/client/proxy', json={'webport':5200})
 
         assert response.status_code == 200
 
@@ -38,9 +51,9 @@ class TestRoutes:
         assert result["webport"] == 5200
         assert result["har"] is not None
 
-    def test_get_client_user_provided_all_ports(self, app):
+    def test_create_proxy_client_user_provided_all_ports(self, app):
 
-        response = app.get('/client?port=5200&webport=5201')
+        response = app.post('/client/proxy', json={'port':5200,'webport':5201})
 
         assert response.status_code == 200
 
@@ -50,11 +63,77 @@ class TestRoutes:
         assert result["webport"] == 5201
         assert result["har"] is not None
 
+    def test_create_command_client_no_args(self, app):
+
+        response = app.post('/client/command', json={})
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+
+    def test_create_command_client_send_environment(self, app):
+        """User can send environment to override default environment"""
+
+        data = {
+            'env': {'VARIABLE':'VALUE'}
+        }
+
+        response = app.post('/client/command', json=data)
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+
+    def test_create_command_client_send_additional_environment(self, app):
+        """User can send additional environment to be merged with default environment"""
+
+        data = {
+            'additional_env': {'VARIABLE':'VALUE'}
+        }
+
+        response = app.post('/client/command', json=data)
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+
+    def test_create_command_client_send_environment_and_additional_environment(self, app):
+        """User can send environment and additional environment to override default environment"""
+
+        data = {
+            'env': {'ORIGINAL_VARIABLE':'ORIGINAL_VALUE'},
+            'additional_env': {'ADDITIONAL_VARIABLE':'ADDITIONAL_VALUE'}
+        }
+
+        response = app.post('/client/command', json=data)
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["client_id"] is not None
+
+    def test_create_command_client_check_parameter_datatypes(self, app):
+        """User is alerted with wrong parameter datatypes are used."""
+
+        data = {
+            'env': 123
+        }
+
+        response = app.post('/client/command', json=data)
+
+        assert response.status_code == 400
+
+        result = response.data
+        assert result == bytes(f"{data['env']} is not of type 'object'", encoding="utf-8")
+
     def test_start_process(self, app_with_client):
 
         (app, client_id) = app_with_client
 
-        response = app.post(f'/{client_id}/proxy/start')
+        response = app.post(f'/{client_id}/start')
         assert response.status_code == 200
 
         result = response.json
@@ -64,7 +143,7 @@ class TestRoutes:
 
         (app, client_id) = app_with_process
 
-        response = app.get(f'/{client_id}/proxy/status')
+        response = app.get(f'/{client_id}/status')
         assert response.status_code == 200
 
         result = response.json
@@ -74,7 +153,7 @@ class TestRoutes:
 
         (app, client_id) = app_with_process
 
-        response = app.post(f'/{client_id}/proxy/stop')
+        response = app.post(f'/{client_id}/stop')
         assert response.status_code == 200
 
         result = response.json
@@ -102,7 +181,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, expected_port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         actual_port = find_open_port()
 
@@ -134,7 +213,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, self.port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         actual_port = find_open_port(lower_bound=5000)
 
@@ -166,7 +245,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, self.port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         actual_port = find_open_port(upper_bound=4000)
 
@@ -199,7 +278,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, self.port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         lower_bound = 5000
         upper_bound = 5099
@@ -230,7 +309,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, self.port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         lower_bound = 5000
         upper_bound = 5099
@@ -276,7 +355,7 @@ class TestRoutes:
             def getsockname(self):
                 return None, self.port
 
-        mocker.patch('manageritm.server.routes.socket.socket', MockedSocket)
+        mocker.patch('manageritm.server.utils.socket.socket', MockedSocket)
 
         lower_bound = 5000
         upper_bound = 5099

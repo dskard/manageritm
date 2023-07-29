@@ -19,13 +19,13 @@ def app(mocker):
 @pytest.fixture(scope="function")
 def app_with_client(app):
 
-    response = app.get('/client')
+    response = app.post('/client/proxy', json={})
     result = response.json
     client_id = result["client_id"]
 
     yield (app, client_id)
 
-    response = app.post(f'/{client_id}/proxy/stop')
+    response = app.post(f'/{client_id}/stop')
 
 
 @pytest.fixture(scope="function")
@@ -33,6 +33,6 @@ def app_with_process(app_with_client):
 
     (app, client_id) = app_with_client
 
-    response = app.post(f'/{client_id}/proxy/start')
+    response = app.post(f'/{client_id}/start')
 
     return (app, client_id)
