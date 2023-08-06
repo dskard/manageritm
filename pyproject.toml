@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "manageritm"
-version = "0.1.0"
+version = "0.2.0"
 description = "Manage processes via an HTTP based API"
 authors = ["dskard"]
 license = "MIT"
