@@ -2,6 +2,27 @@
 
 
 
+## v0.3.0 (2023-08-06)
+
+### Ci
+
+* ci: upgrade python-semantic-release, fix pypi publishing ([`bd677db`](https://github.com/dskard/manageritm/commit/bd677db335c71ae991647899e87482216d0e4619))
+
+### Feature
+
+* feat: remove manageritm client library
+
+the client library is in a separate library, manageritm-client.
+this allows people to install the client without needing the
+dependencies of the server. ([`f967eff`](https://github.com/dskard/manageritm/commit/f967eff12fcef4cbd62f3088156e6cef01bbec23))
+
+### Unknown
+
+* Merge pull request #5 from dskard/dsk-remove-client
+
+feat: remove manageritm client library ([`a14ba0d`](https://github.com/dskard/manageritm/commit/a14ba0db976b30eddb08569edc824c49370b0ec5))
+
+
 ## v0.2.0 (2023-08-06)
 
 ### Ci
