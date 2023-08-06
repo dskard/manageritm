@@ -1,5 +1,4 @@
-from flask import Flask
-
+from flask import Flask, Blueprint
 
 def create_app(test_config=None):
     # create and configure the app
@@ -15,7 +14,11 @@ def create_app(test_config=None):
         # load the test config if passed in
         app.config.from_pyfile(test_config)
 
-    from . import routes
-    app.register_blueprint(routes.bp)
+    # register blueprints
+    from manageritm.server.main import bp as main_bp
+    app.register_blueprint(main_bp)
+
+    from manageritm.server.client import bp as client_bp
+    app.register_blueprint(client_bp, url_prefix='/client')
 
     return app

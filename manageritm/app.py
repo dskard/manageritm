@@ -18,9 +18,13 @@ def parse_arguments():
     return opts,unknowns
 
 
-def main():
+def main(config=None):
     opts, unknowns = parse_arguments()
-    app = create_app(opts.config)
+
+    if config is None:
+        config = opts.config
+
+    app = create_app(config)
 
     # share flask app logs with gunicorn
     # set the flask app log level to the same as gunicorn

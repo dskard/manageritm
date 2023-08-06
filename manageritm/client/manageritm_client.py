@@ -32,7 +32,7 @@ class ManagerITMClient:
 
     def __del__(self):
         if self._client_id is not None:
-            status = self.proxy_status()["status"]
+            status = self.status()["status"]
             # status  |  meaning
             # --------+-------------------------------
             # None    |  process still running
@@ -40,7 +40,7 @@ class ManagerITMClient:
             #  0      |  process exited successfully
             #  1      |  process error while starting
             if status not in [None, -1, 0, 1]:
-                self.proxy_stop()
+                self.stop()
                 self._client_id = None
 
     def _check_status(self, response):
@@ -54,22 +54,14 @@ class ManagerITMClient:
 
         return r.json()
 
-    def client(self, port=None, webport=None):
-        params = {}
-        if port is not None:
-            params['port'] = port
-        if webport is not None:
-            params['webport'] = webport
+    def client(self):
+        pass
 
-        result = self._http(requests.get, "/client", params=params)
-        self._client_id = result["client_id"]
-        return result
+    def start(self):
+        return self._http(requests.post, f"/{self._client_id}/start")
 
-    def proxy_start(self):
-        return self._http(requests.post, f"/{self._client_id}/proxy/start")
+    def status(self):
+        return self._http(requests.get, f"/{self._client_id}/status")
 
-    def proxy_status(self):
-        return self._http(requests.get, f"/{self._client_id}/proxy/status")
-
-    def proxy_stop(self):
-        return self._http(requests.post, f"/{self._client_id}/proxy/stop")
+    def stop(self):
+        return self._http(requests.post, f"/{self._client_id}/stop")

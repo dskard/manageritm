@@ -48,6 +48,7 @@ def configure(updated):
                 "version": "0.1",
                 "comment": "mitmproxy version %s" % version.MITMPROXY
             },
+            "pages": [{"pageTimings": {}}],
             "entries": []
         }
     })

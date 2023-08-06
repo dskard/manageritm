@@ -1,5 +1,7 @@
+import os
 import pytest
 
+from deepdiff import DeepDiff
 from manageritm.server.process_minder import ProcessMinder
 from subprocess import STDOUT, TimeoutExpired
 
@@ -16,7 +18,7 @@ class TestProcessMinder:
         mocker.patch('manageritm.server.process_minder.ProcessMinder._open_log_files', mocked_open_log_files)
 
 
-    def test_start(self, mocker):
+    def test_start_without_environment(self, mocker):
 
         class MockedPopen:
             def __init__(self,command,**args):
@@ -41,6 +43,76 @@ class TestProcessMinder:
         # this isnt true when we save stdout and stderr to log files
         assert pm.process.args["stdout"] == pm.log
         assert pm.process.args["stderr"] == STDOUT
+
+
+    def test_start_with_environment(self, mocker):
+        """caller can provide the environment the process should be started with."""
+
+        class MockedPopen:
+            def __init__(self,command,**args):
+                self.command = command
+                self.args = args
+                self.pid = 400
+            def poll(self):
+                # set to 0 so __del__() succeeds
+                self.returncode = 0
+                return self.returncode
+
+        mocker.patch('manageritm.server.process_minder.Popen', MockedPopen)
+
+        command = "my_command"
+        env = {
+            "PROCESS_VARIABLE": "VALUE"
+        }
+        pm = ProcessMinder(command, env)
+
+        # call the start() function
+        pm.start()
+
+        # check that Popen was called with the correct args to start a process
+        assert pm.process.command == command
+        # this isnt true when we save stdout and stderr to log files
+        assert pm.process.args["stdout"] == pm.log
+        assert pm.process.args["stderr"] == STDOUT
+        assert DeepDiff(pm.process.args["env"], env) == {}
+
+
+    def test_start_with_additional_environment(self, mocker):
+        """caller can provide additional environment the process should be started with."""
+
+        class MockedPopen:
+            def __init__(self,command,**args):
+                self.command = command
+                self.args = args
+                self.pid = 400
+            def poll(self):
+                # set to 0 so __del__() succeeds
+                self.returncode = 0
+                return self.returncode
+
+        mocker.patch('manageritm.server.process_minder.Popen', MockedPopen)
+
+        command = "my_command"
+        additional_env = {
+            "PROCESS_VARIABLE": "VALUE"
+        }
+        pm = ProcessMinder(command, additional_env=additional_env)
+
+        # call the start() function
+        pm.start()
+
+        # check that Popen was called with the correct args to start a process
+        assert pm.process.command == command
+        # this isnt true when we save stdout and stderr to log files
+        assert pm.process.args["stdout"] == pm.log
+        assert pm.process.args["stderr"] == STDOUT
+
+        # the environment that should be sent to Popen should include
+        # the current environment with the user provided additional
+        # environment merged in.
+        env = os.environ
+        env |= additional_env
+        assert DeepDiff(pm.process.args["env"], env) == {}
 
 
     def test_stop_terminate(self, mocker):
