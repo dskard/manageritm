@@ -25,6 +25,7 @@ class TestRoutes:
         result = response.json
         assert result["client_id"] is not None
         assert result["port"] is not None
+        assert result["webport"] is not None
         assert result["har"] is not None
 
     def test_create_proxy_client_user_provided_port(self, app):
@@ -63,6 +64,41 @@ class TestRoutes:
         assert result["webport"] == 5201
         assert result["har"] is not None
 
+    def test_create_proxy_client_user_provided_additional_flags(self, app):
+        """User can send additional flags to be merged with default flags"""
+
+        data = {
+            'additional_flags': ['--opt1','value1','--opt2','value2']
+        }
+
+        response = app.post('/client/proxy', json=data)
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["command"] is not None
+
+        # find all of the places in the command
+        # that look like they could be the additional flags we provided
+        indices = [idx for idx, value in enumerate(result['command']) if value == data['additional_flags'][0]]
+
+        # get the number of additional items we should have added to the command
+        num_items = len(data['additional_flags'])
+
+        # look through the command to find the additional flags we added
+        matching_part_of_command = None
+        for i in indices:
+            # grab a possibly matching part of the command list
+            l1 = result['command'][i:i+num_items]
+            # check if this part of the command list matches our arguments
+            if l1 == data['additional_flags']:
+                # stop searching
+                matching_part_of_command = l1
+                break
+
+        # check that we found the additional arguments we added to the command
+        assert matching_part_of_command is not None
+
     def test_create_command_client_no_args(self, app):
 
         response = app.post('/client/command', json={})
@@ -70,6 +106,21 @@ class TestRoutes:
         assert response.status_code == 200
 
         result = response.json
+        assert result["client_id"] is not None
+
+    def test_create_command_client_send_command(self, app):
+        """User can send command to override default command"""
+
+        data = {
+            'command': ['sleep','200000000000']
+        }
+
+        response = app.post('/client/command', json=data)
+
+        assert response.status_code == 200
+
+        result = response.json
+        assert result["command"] == data['command']
         assert result["client_id"] is not None
 
     def test_create_command_client_send_environment(self, app):

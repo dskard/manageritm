@@ -21,6 +21,10 @@ def proxy_client():
             "port" : {"type" : "integer"},
             "webport" : {"type" : "integer"},
             "har" : {"type" : "string"},
+            "additional_flags" : {
+                "type" : "array",
+                "items" : {"type" : "string"},
+            },
         },
     }
 
@@ -28,18 +32,6 @@ def proxy_client():
         validate(instance=user_provided_data, schema=schema)
     except ValidationError as e:
         return Response(e.message, status=400)
-
-    user_provided_port = None
-    if 'port' in user_provided_data:
-        user_provided_port = user_provided_data['port']
-
-    user_provided_webport = None
-    if 'webport' in user_provided_data:
-        user_provided_webport = user_provided_data['webport']
-
-    user_provided_har = None
-    if 'har' in user_provided_data:
-        user_provided_har = user_provided_data['har']
 
     result = dict(
         client_id=None,
@@ -53,21 +45,21 @@ def proxy_client():
     port_lower_bound = current_app.config['MANAGERITM_PROXY_PORT_LOWER_BOUND']
     port_upper_bound = current_app.config['MANAGERITM_PROXY_PORT_UPPER_BOUND']
 
-    if user_provided_port is None:
+    if 'port' in user_provided_data:
+        port = user_provided_data['port']
+    else:
         port = find_open_port(port_lower_bound, port_upper_bound)
         if port is None:
             current_app.logger.info(f"could not find an open port in the range {port_lower_bound}-{port_upper_bound}")
             return result
-    else:
-        port = user_provided_port
 
-    if user_provided_webport is None:
+    if 'webport' in user_provided_data:
+        webport = user_provided_data['webport']
+    else:
         webport = find_open_port(port_lower_bound, port_upper_bound)
         if webport is None:
             current_app.logger.info(f"could not find an open webport in the range {port_lower_bound}-{port_upper_bound}")
             return result
-    else:
-        webport = user_provided_webport
 
     mitmproxy_scripts_dir = os.path.abspath(os.path.join(current_app.root_path, "scripts"))
     har_dump_script_path = os.path.join(mitmproxy_scripts_dir, "har_dump.py")
@@ -79,13 +71,17 @@ def proxy_client():
 
     m = ProcessMinder()
 
-    if user_provided_har is None:
-        har_filename = f"dump-{m.client_id}.har"
+    if 'har' in user_provided_data:
+        har_filename = user_provided_data['har']
     else:
-        har_filename = user_provided_har
+        har_filename = f"dump-{m.client_id}.har"
 
     har_file_path = os.path.join(har_dump_directory, har_filename)
 
+    if 'additional_flags' in user_provided_data:
+        user_provided_additional_flags = user_provided_data['additional_flags']
+    else:
+        user_provided_additional_flags = []
 
     m.command = [
         "mitmweb",
@@ -95,9 +91,10 @@ def proxy_client():
         "--web-host", "0.0.0.0",
         "--web-port", f"{webport}",
         "--no-web-open-browser"
-    ]
+    ] + user_provided_additional_flags
 
     processes[m.client_id] = m
+    result["command"] = m.command
     result["client_id"] = m.client_id
     result["port"] = port
     result["webport"] = webport
@@ -116,6 +113,10 @@ def command_client():
     schema = {
         "type" : "object",
         "properties" : {
+            "command": {
+                "type" : "array",
+                "items" : {"type" : "string"},
+            },
             "env" : {"type" : "object"},
             "additional_env" : {"type" : "object"},
         },
@@ -128,6 +129,8 @@ def command_client():
 
 
     command = current_app.config['MANAGERITM_CLIENT_COMMAND']
+    if 'command' in user_provided_data:
+        command = user_provided_data['command']
 
     env = None
     if 'env' in user_provided_data:
@@ -149,6 +152,7 @@ def command_client():
     )
 
     processes[m.client_id] = m
+    result["command"] = m.command
     result["client_id"] = m.client_id
 
     return result
