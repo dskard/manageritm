@@ -2,6 +2,86 @@
 
 
 
+## v0.4.0 (2023-10-28)
+
+### Ci
+
+* ci: stop testing against windows
+
+until we figure out why installing pyrepl fails with:
+```
+  � Installing werkzeug (3.0.1)
+
+  ChefBuildError
+
+  Backend &#39;setuptools.build_meta:__legacy__&#39; is not available.
+
+  at ~\AppData\Roaming\pypoetry\venv\lib\site-packages\poetry\installation\chef.py:147 in _prepare
+      143|
+      144|                 error = ChefBuildError(&#34;\n\n&#34;.join(message_parts))
+      145|
+      146|             if error is not None:
+    &gt; 147|                 raise error from None
+      148|
+      149|             return path
+      150|
+      151|     def _prepare_sdist(self, archive: Path, destination: Path | None = None) -&gt; Path:
+
+Note: This error originates from the build backend, and is likely not a problem with poetry but with pyrepl (0.9.0) not supporting PEP 517 builds. You can verify this by running &#39;pip wheel --use-pep517 &#34;pyrepl (==0.9.0)&#34;&#39;.
+
+Error: Process completed with exit code 1.
+``` ([`1d70cc8`](https://github.com/dskard/manageritm/commit/1d70cc8ce8cd52d9f81834429bbbf52fac17b31d))
+
+### Feature
+
+* feat: user can specify flags to proxy, and specify command
+
+When using the /client/proxy endpoint, users can send additional command
+line options to the proxy command. In the data sent with the request,
+provide a key named `additional_flags` and a value that is a list of
+flags to be appended to the default command.
+
+Example:
+
+```
+{
+   ...
+   &#39;additional_flags&#39;: [&#39;--opt1&#39;,&#39;value1&#39;,&#39;--opt2&#39;,&#39;value2&#39;]
+}
+```
+
+When using the /client/command endpoint, users can set the command to
+run. In the data sent with the request, provide a key named `command`
+and a value that that is a list version of the command to run.
+
+Example:
+
+```
+{
+   ...
+   &#39;command&#39;: [&#39;sleep&#39;,&#39;200000000000&#39;]
+}
+```
+
+Added test cases for the new features.
+
+Updating Makefile to use `pyenv virtualenv-delete` to delete the virtual
+environment instead of `pyenv uninstall`. Also, I think the hooks are
+properly being created in pyenv now, so we don&#39;t need to install black,
+pytest, and pdbpp outside of poetry. We can run `poetry install` to get
+all of the pieces installed. ([`0aea355`](https://github.com/dskard/manageritm/commit/0aea3551e20b7f41ac178e59d602faff7ecc632b))
+
+### Fix
+
+* fix: update dependency versions ([`952cc54`](https://github.com/dskard/manageritm/commit/952cc541379e174cebc2eaa817e698541e5661e1))
+
+### Unknown
+
+* Merge pull request #6 from dskard/dsk-update-client-proxy-and-command-route-parameters
+
+update client proxy and command route parameters ([`f3675bb`](https://github.com/dskard/manageritm/commit/f3675bbad81b2d30b865aa2400c90c78c0eecb42))
+
+
 ## v0.3.0 (2023-08-06)
 
 ### Ci
